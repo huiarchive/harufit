@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>하루핏 - 당일치기 여행 시간 계산기</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            toss: {
+              blue: '#3182F6', soft: '#E8F3FF', bg: '#F2F4F6',
+              text: '#191F28', sub: '#4E5968', mute: '#8B95A1', line: '#E5E8EB',
+            },
+          },
+          fontFamily: {
+            sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    .select-chevron {
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 8l5 5 5-5' stroke='%238B95A1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+    }
+    /* 한글은 단어 단위로 줄바꿈하고, 문장은 줄 길이를 고르게 맞춰요 */
+    body { word-break: keep-all; overflow-wrap: break-word; }
+    p, h1, h2 { text-wrap: balance; }
+    @media (prefers-reduced-motion: reduce) {
+      .animate-pulse { animation: none; }
+      .transition { transition: none; }
+    }
+  </style>
+</head>
+<body class="bg-toss-bg font-sans text-toss-text antialiased">
+  <div class="mx-auto max-w-[1440px] px-5 pb-10 pt-8 lg:px-10 lg:pt-12">
+    <header class="mb-8 flex items-center justify-between lg:mb-10">
+      <a href="index.html" class="text-2xl font-extrabold tracking-tight text-toss-blue lg:text-3xl">하루핏</a>
+      <div class="flex items-center gap-2">
+        <a href="ranking.html" class="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-toss-sub shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition active:scale-95">인기 랭킹</a>
+        <a href="mypage.html" class="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-toss-sub shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition active:scale-95">찜한 곳 <span id="likeBadge" class="hidden min-w-[1.5rem] rounded-full bg-toss-blue px-2 py-0.5 text-center text-xs font-bold text-white">0</span></a>
+      </div>
+    </header>
+
+    <div class="items-start lg:grid lg:grid-cols-[20rem_1fr] lg:gap-8">
+
+      <!-- 선택 패널 (PC: 왼쪽 고정 / 모바일: 위쪽) -->
+      <aside class="mb-6 lg:sticky lg:top-8 lg:mb-0">
+        <h1 class="mb-2 text-3xl font-bold leading-tight">오늘, 어디까지<br>다녀올까요?</h1>
+        <p class="mb-6 text-toss-mute">출발지와 가는 곳을 고르면 가까운 곳부터 보여드려요.</p>
+
+        <div class="space-y-5 rounded-3xl bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
+          <div>
+            <p class="mb-2 text-sm font-semibold text-toss-sub">어디서 출발하세요?</p>
+            <div class="mb-3 grid grid-cols-2 gap-1 rounded-xl bg-toss-bg p-1" role="tablist">
+              <button type="button" id="tabSearch" role="tab" aria-selected="true" class="h-9 rounded-lg bg-white text-sm font-semibold shadow-sm transition">동네 검색</button>
+              <button type="button" id="tabList" role="tab" aria-selected="false" class="h-9 rounded-lg text-sm font-semibold text-toss-mute transition">목록에서 선택</button>
+            </div>
+            <div id="panelSearch">
+              <input id="placeInput" type="search" autocomplete="off" aria-label="동네, 주소, 역 이름 검색"
+                placeholder="동네나 주소, 역 이름 (예: 회기동)"
+                class="h-12 w-full rounded-xl bg-toss-bg px-4 text-[15px] font-medium outline-none placeholder:text-toss-mute focus-visible:ring-4 focus-visible:ring-toss-blue/30">
+              <ul id="placeResults" class="mt-2 hidden overflow-hidden rounded-xl border border-toss-line bg-white"></ul>
+              <p id="placeMsg" class="mt-2 hidden text-sm text-toss-mute"></p>
+            </div>
+            <div id="panelList" class="hidden space-y-2">
+              <select id="originSido" aria-label="출발지 시/도" class="select-chevron h-12 w-full rounded-xl bg-toss-bg px-4 pr-10 text-[15px] font-medium outline-none focus-visible:ring-4 focus-visible:ring-toss-blue/30"></select>
+              <select id="originSigungu" aria-label="출발지 시/군/구" class="select-chevron h-12 w-full rounded-xl bg-toss-bg px-4 pr-10 text-[15px] font-medium outline-none focus-visible:ring-4 focus-visible:ring-toss-blue/30 disabled:text-toss-mute"></select>
+            </div>
+            <div id="originChip" class="mt-3 hidden rounded-xl bg-toss-soft px-4 py-3 text-sm font-semibold text-toss-blue"></div>
+          </div>
+          <div>
+            <label for="destArea" class="mb-2 block text-sm font-semibold text-toss-sub">어디로 가볼까요?</label>
+            <select id="destArea" class="select-chevron h-12 w-full rounded-xl bg-toss-bg px-4 pr-10 text-[15px] font-medium outline-none focus-visible:ring-4 focus-visible:ring-toss-blue/30"></select>
+          </div>
+          <div>
+            <p id="hoursLabel" class="mb-2 text-sm font-semibold text-toss-sub">오늘 몇 시간 쓸 수 있어요?</p>
+            <div id="hoursChips" role="radiogroup" aria-labelledby="hoursLabel" class="grid grid-cols-4 gap-2">
+                <button type="button" role="radio" data-hours="4" class="h-11 rounded-xl text-[15px] font-bold transition active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-toss-blue/30">4시간</button>
+                <button type="button" role="radio" data-hours="6" class="h-11 rounded-xl text-[15px] font-bold transition active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-toss-blue/30">6시간</button>
+                <button type="button" role="radio" data-hours="8" class="h-11 rounded-xl text-[15px] font-bold transition active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-toss-blue/30">8시간</button>
+                <button type="button" role="radio" data-hours="10" class="h-11 rounded-xl text-[15px] font-bold transition active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-toss-blue/30">10시간</button>
+            </div>
+            <p class="mt-2 text-xs text-toss-mute">왕복 이동시간을 뺀 시간이 현지에서 머물 수 있는 시간이에요.</p>
+          </div>
+        </div>
+
+        <!-- 모바일: 하단 고정 버튼 / PC: 패널 아래 -->
+        <div class="fixed inset-x-0 bottom-0 z-20 border-t border-toss-line bg-white/90 p-4 backdrop-blur lg:static lg:mt-4 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+          <button id="searchBtn" type="button" disabled
+            class="h-14 w-full rounded-2xl bg-toss-blue text-lg font-bold text-white transition active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-toss-blue/30 disabled:cursor-not-allowed disabled:bg-[#B0B8C1] disabled:active:scale-100">
+            여행지 찾아보기
+          </button>
+        </div>
+      </aside>
+
+      <!-- 결과 영역 -->
+      <main class="pb-28 lg:pb-0" aria-live="polite">
+        <div id="summary" class="mb-5 hidden"></div>
+        <div id="grid" class="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4"></div>
+        <div id="state"></div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/regions.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/geo.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/places.js"></script>
+  <script src="js/travel.js"></script>
+  <script src="js/weather.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/crowd-logic.js"></script>
+  <script src="js/likes.js"></script>
+  <script src="js/app.js"></script>
+  <script type="module" src="js/firebase-boot.js"></script>
+</body>
+</html>
