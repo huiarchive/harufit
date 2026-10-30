@@ -1,0 +1,129 @@
+{
+  "rules": {
+    "reports": {
+      "$contentId": {
+        ".read": true,
+        ".indexOn": [
+          "ts"
+        ],
+        "$reportId": {
+          ".write": "!data.exists()",
+          ".validate": "newData.hasChildren(['level', 'ts'])",
+          "level": {
+            ".validate": "newData.isString() && (newData.val() == 'quiet' || newData.val() == 'normal' || newData.val() == 'crowded')"
+          },
+          "ts": {
+            ".validate": "newData.isNumber() && newData.val() == now"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "users": {
+      "$uid": {
+        "likes": {
+          ".read": "auth != null && auth.uid == $uid",
+          ".write": "auth != null && auth.uid == $uid",
+          "$contentId": {
+            ".validate": "newData.hasChildren(['id', 'title', 'savedAt'])",
+            "id": {
+              ".validate": "newData.isString() && newData.val() == $contentId"
+            },
+            "title": {
+              ".validate": "newData.isString() && newData.val().length < 500"
+            },
+            "addr": {
+              ".validate": "newData.isString() && newData.val().length < 500"
+            },
+            "image": {
+              ".validate": "newData.isString() && newData.val().length < 500"
+            },
+            "typeId": {
+              ".validate": "newData.isString() && newData.val().length < 500"
+            },
+            "typeLabel": {
+              ".validate": "newData.isString() && newData.val().length < 500"
+            },
+            "lat": {
+              ".validate": "newData.isNumber()"
+            },
+            "lng": {
+              ".validate": "newData.isNumber()"
+            },
+            "savedAt": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      }
+    },
+    "ranking": {
+      ".read": true,
+      "$contentId": {
+        ".validate": "newData.hasChildren(['title'])",
+        "title": {
+          ".write": "auth != null",
+          ".validate": "newData.isString() && newData.val().length < 500"
+        },
+        "addr": {
+          ".write": "auth != null",
+          ".validate": "newData.isString() && newData.val().length < 500"
+        },
+        "image": {
+          ".write": "auth != null",
+          ".validate": "newData.isString() && newData.val().length < 500"
+        },
+        "typeId": {
+          ".write": "auth != null",
+          ".validate": "newData.isString() && newData.val().length < 500"
+        },
+        "typeLabel": {
+          ".write": "auth != null",
+          ".validate": "newData.isString() && newData.val().length < 500"
+        },
+        "likes": {
+          ".validate": true
+        },
+        "voters": {
+          "$uid": {
+            ".write": "auth != null && auth.uid == $uid",
+            ".validate": "newData.val() === true"
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "feed": {
+      ".read": true,
+      ".indexOn": [
+        "ts"
+      ],
+      "$pushId": {
+        ".write": "!data.exists()",
+        ".validate": "newData.hasChildren(['id', 'title', 'level', 'ts'])",
+        "id": {
+          ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]+$/)"
+        },
+        "title": {
+          ".validate": "newData.isString() && newData.val().length < 200"
+        },
+        "level": {
+          ".validate": "newData.isString() && (newData.val() == 'quiet' || newData.val() == 'normal' || newData.val() == 'crowded')"
+        },
+        "ts": {
+          ".validate": "newData.isNumber() && newData.val() == now"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    }
+  }
+}
